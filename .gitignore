@@ -1,0 +1,17 @@
+# IDE files
+.idea/
+.vscode/
+
+# Node
+node_modules/
+**/node_modules/
+
+# Java / Spring Boot
+target/
+
+# Build files
+dist/
+build/
+
+# Environment
+.env

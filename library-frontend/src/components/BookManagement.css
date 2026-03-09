@@ -1,0 +1,36 @@
+/* BookManagement.css */
+/* Add this file and import it in BookManagement.jsx */
+
+/* Book card hover — lifts the card */
+.book-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Show the action overlay buttons on hover */
+.book-card:hover .book-overlay {
+  opacity: 1 !important;
+}
+
+/* Zoom the cover image on hover */
+.book-card:hover .book-cover-img {
+  transform: scale(1.05);
+}
+
+/* Smooth button hover feedback */
+.book-card .book-overlay button:hover {
+  filter: brightness(1.1);
+  transform: scale(1.03);
+}
+
+/* Search input focus ring */
+.search-input:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Add button hover */
+.add-book-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
+}
