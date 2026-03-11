@@ -38,7 +38,6 @@
 // }
 // }
 
-
 package com.Spring.demo.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,21 +61,24 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        // Delete and recreate superadmin every time to ensure correct values
-        userRepository.findByEmail("superadmin@library.com")
-                .ifPresent(u -> userRepository.delete(u));
+        // Only create if it does NOT already exist — never delete
+        if (userRepository.findByEmail("superadmin@library.com").isEmpty()) {
 
-        User admin = new User();
-        admin.setName("B.Harinath");
-        admin.setEmail("superadmin@library.com");
-        admin.setPassword(passwordEncoder.encode("Admin@123"));
-        admin.setRole(Role.ADMIN);
-        admin.setVerified(true);
-        admin.setApproved(true);
-        admin.setOtp(null);
-        admin.setOtpExpiry(null);
+            User admin = new User();
+            admin.setName("B.Harinath");
+            admin.setEmail("superadmin@library.com");
+            admin.setPassword(passwordEncoder.encode("Admin@123"));
+            admin.setRole(Role.ADMIN);
+            admin.setVerified(true);
+            admin.setApproved(true);
+            admin.setOtp(null);
+            admin.setOtpExpiry(null);
 
-        userRepository.save(admin);
-        System.out.println("✅ Super Admin Created: superadmin@library.com / Admin@123");
+            userRepository.save(admin);
+            System.out.println("✅ Super Admin Created: superadmin@library.com / Admin@123");
+
+        } else {
+            System.out.println("✅ Super Admin already exists — skipping.");
+        }
     }
 }

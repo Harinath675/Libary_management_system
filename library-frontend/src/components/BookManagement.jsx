@@ -1,29 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BookManagement.jsx  —  v2
-//
-// NEW in this version:
-//   ✅ Department filter chips (CSE, ECE, EEE, MECHANICAL, CIVIL, MBBS, MBA…)
-//   ✅ Book cover image upload — Admin/Librarian can upload a photo per book
-//   ✅ Cover shown from backend first, then Google Books API as fallback
-//   ✅ Department tag on every book card
-//
-// Usage:
-//   <BookManagement userRole="ADMIN"     />
-//   <BookManagement userRole="LIBRARIAN" />
-//   <BookManagement userRole="MEMBER"    />
-// ─────────────────────────────────────────────────────────────────────────────
-
 const API_BASE = "http://localhost:8080/api";
-const SERVER   = "http://localhost:8080";          // base for uploaded image URLs
+const SERVER   = "http://localhost:8080";
 const getToken = () => localStorage.getItem("token");
 const authHeaders = () => ({
   "Content-Type": "application/json",
   Authorization: `Bearer ${getToken()}`,
 });
 
-// ── All departments ───────────────────────────────────────────────────────────
 const DEPARTMENTS = [
   "CSE","ECE","EEE","MECHANICAL","CIVIL",
   "MBBS","MBA","HISTORY","QUANTUM PHYSICS",
@@ -32,32 +16,21 @@ const DEPARTMENTS = [
 ];
 
 const DEPT_COLORS = {
-  "CSE":            { bg:"#dbeafe", fg:"#1d4ed8" },
-  "ECE":            { bg:"#d1fae5", fg:"#065f46" },
-  "EEE":            { bg:"#fef9c3", fg:"#854d0e" },
-  "MECHANICAL":     { bg:"#fee2e2", fg:"#991b1b" },
-  "CIVIL":          { bg:"#ede9fe", fg:"#5b21b6" },
-  "MBBS":           { bg:"#fce7f3", fg:"#9d174d" },
-  "MBA":            { bg:"#e0f2fe", fg:"#0369a1" },
-  "HISTORY":        { bg:"#fff7ed", fg:"#9a3412" },
-  "QUANTUM PHYSICS":{ bg:"#f0fdf4", fg:"#15803d" },
-  "DATA SCIENCE":   { bg:"#f5f3ff", fg:"#6d28d9" },
-  "BIOTECHNOLOGY":  { bg:"#ecfdf5", fg:"#065f46" },
-  "PHARMACY":       { bg:"#fdf4ff", fg:"#7e22ce" },
-  "ARCHITECTURE":   { bg:"#fff1f2", fg:"#be123c" },
-  "LAW":            { bg:"#f0f9ff", fg:"#0c4a6e" },
-  "GENERAL":        { bg:"#f1f5f9", fg:"#475569" },
-};
-
-// ── Google Books cover fallback ───────────────────────────────────────────────
-const fetchGoogleCover = async (title, author) => {
-  try {
-    const q   = encodeURIComponent(`${title} ${author}`);
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
-    const d   = await res.json();
-    const lnk = d?.items?.[0]?.volumeInfo?.imageLinks;
-    return lnk?.thumbnail || lnk?.smallThumbnail || null;
-  } catch { return null; }
+  "CSE":             { bg:"#dbeafe", fg:"#1d4ed8" },
+  "ECE":             { bg:"#d1fae5", fg:"#065f46" },
+  "EEE":             { bg:"#fef9c3", fg:"#854d0e" },
+  "MECHANICAL":      { bg:"#fee2e2", fg:"#991b1b" },
+  "CIVIL":           { bg:"#ede9fe", fg:"#5b21b6" },
+  "MBBS":            { bg:"#fce7f3", fg:"#9d174d" },
+  "MBA":             { bg:"#e0f2fe", fg:"#0369a1" },
+  "HISTORY":         { bg:"#fff7ed", fg:"#9a3412" },
+  "QUANTUM PHYSICS": { bg:"#f0fdf4", fg:"#15803d" },
+  "DATA SCIENCE":    { bg:"#f5f3ff", fg:"#6d28d9" },
+  "BIOTECHNOLOGY":   { bg:"#ecfdf5", fg:"#065f46" },
+  "PHARMACY":        { bg:"#fdf4ff", fg:"#7e22ce" },
+  "ARCHITECTURE":    { bg:"#fff1f2", fg:"#be123c" },
+  "LAW":             { bg:"#f0f9ff", fg:"#0c4a6e" },
+  "GENERAL":         { bg:"#f1f5f9", fg:"#475569" },
 };
 
 const GRADIENTS = [
@@ -78,6 +51,17 @@ const EMPTY = {
   totalCopies:1, availableCopies:1,
 };
 
+// ── Google Books cover fallback ───────────────────────────────────────────────
+const fetchGoogleCover = async (title, author) => {
+  try {
+    const q   = encodeURIComponent(`${title} ${author}`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+    const d   = await res.json();
+    const lnk = d?.items?.[0]?.volumeInfo?.imageLinks;
+    return lnk?.thumbnail || lnk?.smallThumbnail || null;
+  } catch { return null; }
+};
+
 // ═════════════════════════════════════════════════════════════════════════════
 // BookCard
 // ═════════════════════════════════════════════════════════════════════════════
@@ -95,19 +79,22 @@ function BookCard({ book, canManage, onEdit, onDelete }) {
     }
   }, [book.coverImageUrl, book.title, book.author]);
 
-  const avail   = book.availableCopies > 0;
-  const dc      = DEPT_COLORS[book.department] || DEPT_COLORS["GENERAL"];
+  const avail = book.availableCopies > 0;
+  const dc    = DEPT_COLORS[book.department] || DEPT_COLORS["GENERAL"];
 
   return (
     <div style={C.wrap}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      {/* Cover image area */}
       <div style={C.coverBox}>
         {cover && !err ? (
           <>
-            {!loaded && <div style={{...C.placeholder, background: grad(book.title)}}><span style={C.placeholderLetter}>{book.title?.[0]}</span></div>}
+            {!loaded && (
+              <div style={{...C.placeholder, background: grad(book.title)}}>
+                <span style={C.letter}>{book.title?.[0]}</span>
+              </div>
+            )}
             <img src={cover} alt={book.title}
               style={{...C.img, opacity: loaded ? 1 : 0}}
               onLoad={() => setLoaded(true)}
@@ -115,16 +102,14 @@ function BookCard({ book, canManage, onEdit, onDelete }) {
           </>
         ) : (
           <div style={{...C.placeholder, background: grad(book.title)}}>
-            <span style={C.placeholderLetter}>{book.title?.[0]?.toUpperCase()}</span>
+            <span style={C.letter}>{book.title?.[0]?.toUpperCase()}</span>
           </div>
         )}
 
-        {/* Availability badge */}
         <div style={{...C.availBadge, background: avail ? "#16a34a" : "#dc2626"}}>
           {avail ? `✓ ${book.availableCopies}` : "✗ Out"}
         </div>
 
-        {/* Hover overlay for manage actions */}
         {canManage && (
           <div style={{...C.overlay, opacity: hover ? 1 : 0}}>
             <button style={C.editBtn} onClick={() => onEdit(book)}>✏️ Edit</button>
@@ -133,7 +118,6 @@ function BookCard({ book, canManage, onEdit, onDelete }) {
         )}
       </div>
 
-      {/* Card info */}
       <div style={C.info}>
         {book.department && (
           <span style={{...C.deptTag, background: dc.bg, color: dc.fg}}>
@@ -155,88 +139,36 @@ function BookCard({ book, canManage, onEdit, onDelete }) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Main: BookManagement
+// AddBookModal — completely rewritten, clean white form
 // ═════════════════════════════════════════════════════════════════════════════
-export default function BookManagement({ userRole = "MEMBER" }) {
-  const canManage = userRole === "ADMIN" || userRole === "LIBRARIAN";
+function AddBookModal({ editBook, onClose, onSaved }) {
+  const [form, setForm] = useState(
+    editBook ? {
+      title: editBook.title||"",
+      author: editBook.author||"",
+      isbn: editBook.isbn||"",
+      genre: editBook.genre||"",
+      department: editBook.department||"",
+      publisher: editBook.publisher||"",
+      publishedYear: editBook.publishedYear||"",
+      description: editBook.description||"",
+      totalCopies: editBook.totalCopies??1,
+      availableCopies: editBook.availableCopies??1,
+    } : { ...EMPTY }
+  );
 
-  const [books,        setBooks]        = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState("");
-  const [success,      setSuccess]      = useState("");
-
-  // Filters
-  const [search,       setSearch]       = useState("");
-  const [filterDept,   setFilterDept]   = useState("");
-  const [filterAvail,  setFilterAvail]  = useState("all");
-
-  // Modal
-  const [showModal,    setShowModal]    = useState(false);
-  const [editBook,     setEditBook]     = useState(null);
-  const [form,         setForm]         = useState(EMPTY);
-  const [formErr,      setFormErr]      = useState("");
-  const [submitting,   setSubmitting]   = useState(false);
-  const [delTarget,    setDelTarget]    = useState(null);
-
-  // Image upload
-  const [coverFile,    setCoverFile]    = useState(null);
-  const [coverPrev,    setCoverPrev]    = useState(null);
-  const [uploading,    setUploading]    = useState(false);
+  const [coverFile,  setCoverFile]  = useState(null);
+  const [coverPrev,  setCoverPrev]  = useState(
+    editBook?.coverImageUrl ? `${SERVER}/${editBook.coverImageUrl}` : null
+  );
+  const [formErr,    setFormErr]    = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading,  setUploading]  = useState(false);
   const fileRef = useRef();
 
-  // ── Load books ──────────────────────────────────────────────────────────────
-  useEffect(() => { loadBooks(); }, []);
+  const set = (key, val) => setForm(p => ({...p, [key]: val}));
 
-  const loadBooks = async () => {
-    setLoading(true); setError("");
-    try {
-      const res = await fetch(`${API_BASE}/books`, { headers: authHeaders() });
-      if (!res.ok) throw new Error();
-      setBooks(await res.json());
-    } catch { setError("Cannot load books — is backend running on port 8080?"); }
-    finally  { setLoading(false); }
-  };
-
-  // ── Filtering ───────────────────────────────────────────────────────────────
-  const presentDepts = [...new Set(books.map(b => b.department).filter(Boolean))].sort();
-
-  const displayed = books.filter(b => {
-    const s  = search.toLowerCase();
-    const ok1 = !search || b.title?.toLowerCase().includes(s) || b.author?.toLowerCase().includes(s) || b.genre?.toLowerCase().includes(s);
-    const ok2 = !filterDept || b.department === filterDept;
-    const ok3 = filterAvail === "all"
-      || (filterAvail === "available"   && b.availableCopies > 0)
-      || (filterAvail === "unavailable" && b.availableCopies === 0);
-    return ok1 && ok2 && ok3;
-  });
-
-  // ── Modal helpers ────────────────────────────────────────────────────────────
-  const openAdd = () => {
-    setEditBook(null); setForm(EMPTY);
-    setCoverFile(null); setCoverPrev(null);
-    setFormErr(""); setShowModal(true);
-  };
-
-  const openEdit = (book) => {
-    setEditBook(book);
-    setForm({
-      title: book.title||"", author: book.author||"",
-      isbn: book.isbn||"", genre: book.genre||"",
-      department: book.department||"",
-      publisher: book.publisher||"",
-      publishedYear: book.publishedYear||"",
-      description: book.description||"",
-      totalCopies: book.totalCopies??1,
-      availableCopies: book.availableCopies??1,
-    });
-    setCoverFile(null);
-    setCoverPrev(book.coverImageUrl ? `${SERVER}/${book.coverImageUrl}` : null);
-    setFormErr(""); setShowModal(true);
-  };
-
-  const closeModal = () => { setShowModal(false); setEditBook(null); };
-
-  // ── Image pick ──────────────────────────────────────────────────────────────
+  // Image pick
   const onFileChange = (e) => {
     const f = e.target.files[0];
     if (!f) return;
@@ -247,7 +179,7 @@ export default function BookManagement({ userRole = "MEMBER" }) {
     setFormErr("");
   };
 
-  // ── Upload cover after save ──────────────────────────────────────────────────
+  // Upload cover
   const uploadCover = async (bookId) => {
     if (!coverFile) return;
     setUploading(true);
@@ -259,11 +191,11 @@ export default function BookManagement({ userRole = "MEMBER" }) {
         headers: { Authorization: `Bearer ${getToken()}` },
         body: fd,
       });
-    } catch { /* non-fatal */ }
+    } catch { }
     finally { setUploading(false); }
   };
 
-  // ── Save book ────────────────────────────────────────────────────────────────
+  // Save
   const handleSave = async () => {
     if (!form.title.trim())  return setFormErr("Title is required.");
     if (!form.author.trim()) return setFormErr("Author is required.");
@@ -271,8 +203,8 @@ export default function BookManagement({ userRole = "MEMBER" }) {
     try {
       const payload = {
         ...form,
-        publishedYear: form.publishedYear ? parseInt(form.publishedYear) : null,
-        totalCopies:   parseInt(form.totalCopies),
+        publishedYear:   form.publishedYear   ? parseInt(form.publishedYear)   : null,
+        totalCopies:     parseInt(form.totalCopies),
         availableCopies: parseInt(form.availableCopies),
       };
       const res = await fetch(
@@ -282,18 +214,306 @@ export default function BookManagement({ userRole = "MEMBER" }) {
       if (!res.ok) { setFormErr("Save failed — check backend."); return; }
       const saved = await res.json();
       if (coverFile) await uploadCover(saved.id || editBook?.id);
-      closeModal();
-      setSuccess(editBook ? "✅ Book updated!" : "✅ Book added!");
-      loadBooks();
-      setTimeout(() => setSuccess(""), 3000);
+      onSaved(editBook ? "✅ Book updated!" : "✅ Book added!");
     } catch { setFormErr("Network error."); }
     finally { setSubmitting(false); }
   };
 
-  // ── Delete book ──────────────────────────────────────────────────────────────
+  return (
+    <div style={M.overlay}>
+      {/* inject placeholder styles */}
+      <style>{`
+        .bm-input::placeholder { color: #9ca3af !important; }
+        .bm-input:focus { border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important; }
+        .bm-input option { color: #1e293b; background: #fff; }
+      `}</style>
+
+      <div style={M.modal}>
+
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <div style={M.header}>
+          <div>
+            <h2 style={M.title}>{editBook ? "✏️ Edit Book" : "➕ Add New Book"}</h2>
+            <p style={M.subtitle}>Fill in the details below to {editBook ? "update" : "add"} a book</p>
+          </div>
+          <button style={M.closeBtn} onClick={onClose}>✕</button>
+        </div>
+
+        {formErr && (
+          <div style={M.errBox}>⚠️ {formErr}</div>
+        )}
+
+        <div style={M.body}>
+
+          {/* ── Cover Image Upload ─────────────────────────────────────────── */}
+          <div style={M.section}>
+            <div style={M.sectionTitle}>📷 Book Cover Image</div>
+            <div style={M.coverRow}>
+              {/* Preview */}
+              <div
+                style={{
+                  ...M.coverPreview,
+                  background: coverPrev ? "transparent" : grad(form.title||"A"),
+                  cursor: "pointer",
+                }}
+                onClick={() => fileRef.current?.click()}
+              >
+                {coverPrev ? (
+                  <img src={coverPrev} alt="preview" style={M.coverImg} />
+                ) : (
+                  <div style={M.coverPlaceholder}>
+                    <span style={{fontSize:32}}>📷</span>
+                    <span style={{fontSize:11, marginTop:6, color:"rgba(255,255,255,0.8)"}}>Click to upload</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload controls */}
+              <div style={M.coverInfo}>
+                <p style={M.coverHint}>
+                  Upload a book cover photo (JPG / PNG, max 5 MB).<br/>
+                  <span style={{color:"#16a34a"}}>If skipped, cover is auto-fetched from Google Books.</span>
+                </p>
+                <div style={{display:"flex", gap:8, flexWrap:"wrap", marginTop:10}}>
+                  <button style={M.chooseBtn} type="button" onClick={() => fileRef.current?.click()}>
+                    📷 {coverFile ? "Change Image" : "Choose Image"}
+                  </button>
+                  {coverFile && (
+                    <button style={M.removeBtn} type="button"
+                      onClick={() => {
+                        setCoverFile(null);
+                        setCoverPrev(editBook?.coverImageUrl ? `${SERVER}/${editBook.coverImageUrl}` : null);
+                      }}>
+                      ✕ Remove
+                    </button>
+                  )}
+                </div>
+                {coverFile && (
+                  <p style={{fontSize:12, color:"#16a34a", marginTop:8}}>
+                    ✓ Selected: {coverFile.name}
+                  </p>
+                )}
+                <input ref={fileRef} type="file" accept="image/*"
+                  style={{display:"none"}} onChange={onFileChange} />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Book Details ───────────────────────────────────────────────── */}
+          <div style={M.section}>
+            <div style={M.sectionTitle}>📚 Book Details</div>
+            <div style={M.grid2}>
+
+              {/* Title */}
+              <div style={M.field}>
+                <label style={M.label}>Title <span style={{color:"#ef4444"}}>*</span></label>
+                <input
+                  className="bm-input"
+                  style={M.input}
+                  type="text"
+                  placeholder="Enter book title"
+                  value={form.title}
+                  onChange={e => set("title", e.target.value)}
+                />
+              </div>
+
+              {/* Author */}
+              <div style={M.field}>
+                <label style={M.label}>Author <span style={{color:"#ef4444"}}>*</span></label>
+                <input
+                  className="bm-input"
+                  style={M.input}
+                  type="text"
+                  placeholder="Enter author name"
+                  value={form.author}
+                  onChange={e => set("author", e.target.value)}
+                />
+              </div>
+
+              {/* Department */}
+              <div style={M.field}>
+                <label style={M.label}>Department 🎓</label>
+                <select
+                  className="bm-input"
+                  style={M.input}
+                  value={form.department}
+                  onChange={e => set("department", e.target.value)}
+                >
+                  <option value="">-- Select Department --</option>
+                  {DEPARTMENTS.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Genre */}
+              <div style={M.field}>
+                <label style={M.label}>Genre</label>
+                <input
+                  className="bm-input"
+                  style={M.input}
+                  type="text"
+                  placeholder="e.g. Textbook, Novel, Reference"
+                  value={form.genre}
+                  onChange={e => set("genre", e.target.value)}
+                />
+              </div>
+
+              {/* ISBN */}
+              <div style={M.field}>
+                <label style={M.label}>ISBN</label>
+                <input
+                  className="bm-input"
+                  style={M.input}
+                  type="text"
+                  placeholder="978-0-000-00000-0"
+                  value={form.isbn}
+                  onChange={e => set("isbn", e.target.value)}
+                />
+              </div>
+
+              {/* Publisher */}
+              <div style={M.field}>
+                <label style={M.label}>Publisher</label>
+                <input
+                  className="bm-input"
+                  style={M.input}
+                  type="text"
+                  placeholder="e.g. Pearson, McGraw-Hill"
+                  value={form.publisher}
+                  onChange={e => set("publisher", e.target.value)}
+                />
+              </div>
+
+              {/* Year */}
+              <div style={M.field}>
+                <label style={M.label}>Published Year</label>
+                <input
+                  className="bm-input"
+                  style={M.input}
+                  type="number"
+                  placeholder="e.g. 2024"
+                  value={form.publishedYear}
+                  onChange={e => set("publishedYear", e.target.value)}
+                />
+              </div>
+
+              {/* Empty cell for alignment */}
+              <div />
+
+              {/* Total Copies */}
+              <div style={M.field}>
+                <label style={M.label}>Total Copies</label>
+                <input
+                  className="bm-input"
+                  style={M.input}
+                  type="number"
+                  min="1"
+                  placeholder="1"
+                  value={form.totalCopies}
+                  onChange={e => set("totalCopies", e.target.value)}
+                />
+              </div>
+
+              {/* Available Copies */}
+              <div style={M.field}>
+                <label style={M.label}>Available Copies</label>
+                <input
+                  className="bm-input"
+                  style={M.input}
+                  type="number"
+                  min="0"
+                  placeholder="1"
+                  value={form.availableCopies}
+                  onChange={e => set("availableCopies", e.target.value)}
+                />
+              </div>
+
+            </div>
+
+            {/* Description — full width */}
+            <div style={{...M.field, marginTop:14}}>
+              <label style={M.label}>Description</label>
+              <textarea
+                className="bm-input"
+                style={{...M.input, minHeight:90, resize:"vertical", lineHeight:1.6}}
+                placeholder="Write a short description of the book…"
+                value={form.description}
+                onChange={e => set("description", e.target.value)}
+              />
+            </div>
+          </div>
+
+        </div>{/* end body */}
+
+        {/* ── Footer ─────────────────────────────────────────────────────── */}
+        <div style={M.footer}>
+          <button style={M.cancelBtn} onClick={onClose}>Cancel</button>
+          <button
+            style={{
+              ...M.saveBtn,
+              opacity: submitting || uploading ? 0.7 : 1,
+              cursor: submitting || uploading ? "not-allowed" : "pointer",
+            }}
+            onClick={handleSave}
+            disabled={submitting || uploading}
+          >
+            {submitting ? "⏳ Saving…" : uploading ? "⏳ Uploading image…" : editBook ? "✅ Update Book" : "✅ Add Book"}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Main BookManagement
+// ═════════════════════════════════════════════════════════════════════════════
+export default function BookManagement({ userRole = "MEMBER" }) {
+  const canManage = userRole === "ADMIN" || userRole === "LIBRARIAN";
+
+  const [books,      setBooks]      = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState("");
+  const [success,    setSuccess]    = useState("");
+
+  const [search,     setSearch]     = useState("");
+  const [filterDept, setFilterDept] = useState("");
+  const [filterAvail,setFilterAvail]= useState("all");
+
+  const [showModal,  setShowModal]  = useState(false);
+  const [editBook,   setEditBook]   = useState(null);
+  const [delTarget,  setDelTarget]  = useState(null);
+
+  useEffect(() => { loadBooks(); }, []);
+
+  const loadBooks = async () => {
+    setLoading(true); setError("");
+    try {
+      const res = await fetch(`${API_BASE}/books`, { headers: authHeaders() });
+      if (!res.ok) throw new Error();
+      setBooks(await res.json());
+    } catch {
+      setError("Cannot load books — is backend running on port 8080?");
+    } finally { setLoading(false); }
+  };
+
+  const presentDepts = [...new Set(books.map(b => b.department).filter(Boolean))].sort();
+
+  const displayed = books.filter(b => {
+    const s   = search.toLowerCase();
+    const ok1 = !search || b.title?.toLowerCase().includes(s) || b.author?.toLowerCase().includes(s) || b.genre?.toLowerCase().includes(s);
+    const ok2 = !filterDept || b.department === filterDept;
+    const ok3 = filterAvail === "all"
+      || (filterAvail === "available"   && b.availableCopies > 0)
+      || (filterAvail === "unavailable" && b.availableCopies === 0);
+    return ok1 && ok2 && ok3;
+  });
+
   const handleDelete = async (id) => {
     try {
-      await fetch(`${API_BASE}/books/${id}`, { method: "DELETE", headers: authHeaders() });
+      await fetch(`${API_BASE}/books/${id}`, { method:"DELETE", headers: authHeaders() });
       setDelTarget(null);
       setSuccess("🗑️ Book deleted!");
       loadBooks();
@@ -301,9 +521,14 @@ export default function BookManagement({ userRole = "MEMBER" }) {
     } catch { setError("Delete failed."); }
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // RENDER
-  // ═══════════════════════════════════════════════════════════════════════════
+  const handleSaved = (msg) => {
+    setShowModal(false);
+    setEditBook(null);
+    setSuccess(msg);
+    loadBooks();
+    setTimeout(() => setSuccess(""), 3000);
+  };
+
   return (
     <div style={P.page}>
 
@@ -313,7 +538,11 @@ export default function BookManagement({ userRole = "MEMBER" }) {
           <h1 style={P.title}>{canManage ? "📚 Book Management" : "🔍 Browse Books"}</h1>
           <p style={P.sub}>{canManage ? `${userRole} · Add, edit, upload covers & manage` : "Search and filter the library collection"}</p>
         </div>
-        {canManage && <button style={P.addBtn} onClick={openAdd}>+ Add Book</button>}
+        {canManage && (
+          <button style={P.addBtn} onClick={() => { setEditBook(null); setShowModal(true); }}>
+            + Add Book
+          </button>
+        )}
       </div>
 
       {success && <div style={P.success}>{success}</div>}
@@ -328,15 +557,13 @@ export default function BookManagement({ userRole = "MEMBER" }) {
         <span style={{...P.stat, marginLeft:"auto", color:"#94a3b8"}}>{displayed.length} shown</span>
       </div>
 
-      {/* ── Department Chips ─────────────────────────────────────────────────── */}
+      {/* Department chips */}
       <div style={P.chipRow}>
         <button
           style={{...P.chip, ...(filterDept===""?P.chipOn:{})}}
           onClick={() => setFilterDept("")}
         >🏫 All</button>
-
         {DEPARTMENTS.map(d => {
-          // only show chip if dept exists in loaded books (or if no books yet — show all)
           if (presentDepts.length > 0 && !presentDepts.includes(d)) return null;
           const col = DEPT_COLORS[d] || DEPT_COLORS["GENERAL"];
           const on  = filterDept === d;
@@ -373,12 +600,9 @@ export default function BookManagement({ userRole = "MEMBER" }) {
         </select>
       </div>
 
-      {/* Grid */}
+      {/* Book grid */}
       {loading ? (
-        <div style={P.center}>
-          <div style={{fontSize:48, marginBottom:12}}>⏳</div>
-          <p>Loading books…</p>
-        </div>
+        <div style={P.center}><div style={{fontSize:48, marginBottom:12}}>⏳</div><p>Loading books…</p></div>
       ) : displayed.length === 0 ? (
         <div style={P.center}>
           <div style={{fontSize:52, marginBottom:12}}>📭</div>
@@ -391,124 +615,36 @@ export default function BookManagement({ userRole = "MEMBER" }) {
         <div style={P.grid}>
           {displayed.map(b => (
             <BookCard key={b.id} book={b} canManage={canManage}
-              onEdit={openEdit} onDelete={setDelTarget} />
+              onEdit={(book) => { setEditBook(book); setShowModal(true); }}
+              onDelete={setDelTarget} />
           ))}
         </div>
       )}
 
-      {/* ════════ ADD / EDIT MODAL ════════ */}
+      {/* Add/Edit Modal */}
       {showModal && (
-        <div style={P.overlay}>
-          <div style={P.modal}>
-            <div style={P.mHead}>
-              <h2 style={P.mTitle}>{editBook ? "✏️ Edit Book" : "➕ Add New Book"}</h2>
-              <button style={P.closeBtn} onClick={closeModal}>✕</button>
-            </div>
-
-            {formErr && <div style={P.formErr}>{formErr}</div>}
-
-            {/* Cover upload */}
-            <div style={P.uploadBox}>
-              <label style={P.label}>📷 Book Cover Image</label>
-              <div style={P.uploadRow}>
-                <div
-                  style={{...P.previewBox, background: coverPrev ? "transparent" : grad(form.title||"A")}}
-                  onClick={() => fileRef.current?.click()}
-                >
-                  {coverPrev
-                    ? <img src={coverPrev} alt="preview" style={P.previewImg} />
-                    : <div style={P.previewPlaceholder}><span style={{fontSize:26}}>📷</span><span style={{fontSize:10, marginTop:3}}>Click to upload</span></div>
-                  }
-                </div>
-                <div style={{flex:1}}>
-                  <p style={{fontSize:12, color:"#64748b", marginBottom:8}}>
-                    Upload a cover photo (JPG / PNG, max 5 MB).<br/>
-                    If skipped, we auto-fetch from Google Books.
-                  </p>
-                  <button style={P.pickBtn} type="button" onClick={() => fileRef.current?.click()}>
-                    {coverFile ? "Change Image" : "Choose Image"}
-                  </button>
-                  {coverFile && (
-                    <>
-                      <button style={P.clearImgBtn} type="button"
-                        onClick={() => { setCoverFile(null); setCoverPrev(editBook?.coverImageUrl ? `${SERVER}/${editBook.coverImageUrl}` : null); }}>
-                        Remove
-                      </button>
-                      <p style={{fontSize:11, color:"#16a34a", marginTop:5}}>✓ {coverFile.name}</p>
-                    </>
-                  )}
-                  <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={onFileChange} />
-                </div>
-              </div>
-            </div>
-
-            {/* Form grid */}
-            <div style={P.formGrid}>
-              {[
-                {label:"Title *",    key:"title",       placeholder:"Book title"},
-                {label:"Author *",   key:"author",      placeholder:"Author name"},
-                {label:"ISBN",       key:"isbn",        placeholder:"978-..."},
-                {label:"Genre",      key:"genre",       placeholder:"Textbook / Novel"},
-                {label:"Publisher",  key:"publisher",   placeholder:"Publisher"},
-                {label:"Year",       key:"publishedYear",placeholder:"2024", type:"number"},
-                {label:"Total Copies",    key:"totalCopies",     placeholder:"", type:"number"},
-                {label:"Available Copies",key:"availableCopies", placeholder:"", type:"number"},
-              ].map(f => (
-                <div key={f.key} style={P.fg}>
-                  <label style={P.label}>{f.label}</label>
-                  <input
-                    style={P.input}
-                    type={f.type||"text"}
-                    value={form[f.key]}
-                    placeholder={f.placeholder}
-                    onChange={e => setForm({...form, [f.key]: e.target.value})}
-                  />
-                </div>
-              ))}
-
-              {/* Department — full row */}
-              <div style={{...P.fg, gridColumn:"1/-1"}}>
-                <label style={P.label}>Department 🎓</label>
-                <select style={P.input} value={form.department}
-                  onChange={e => setForm({...form, department: e.target.value})}>
-                  <option value="">-- Select Department --</option>
-                  {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-
-              {/* Description — full row */}
-              <div style={{...P.fg, gridColumn:"1/-1"}}>
-                <label style={P.label}>Description</label>
-                <textarea style={{...P.input, minHeight:70, resize:"vertical"}}
-                  value={form.description}
-                  placeholder="Short description…"
-                  onChange={e => setForm({...form, description: e.target.value})} />
-              </div>
-            </div>
-
-            <div style={P.mFoot}>
-              <button style={P.cancelBtn} onClick={closeModal}>Cancel</button>
-              <button style={{...P.saveBtn, opacity: submitting||uploading ? 0.7 : 1}}
-                onClick={handleSave} disabled={submitting||uploading}>
-                {submitting ? "Saving…" : uploading ? "Uploading image…" : editBook ? "Update Book" : "Add Book"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <AddBookModal
+          editBook={editBook}
+          onClose={() => { setShowModal(false); setEditBook(null); }}
+          onSaved={handleSaved}
+        />
       )}
 
-      {/* ════════ DELETE CONFIRM ════════ */}
+      {/* Delete confirm */}
       {delTarget && (
-        <div style={P.overlay}>
-          <div style={{...P.modal, maxWidth:400, textAlign:"center"}}>
-            <div style={{fontSize:48, marginBottom:10}}>🗑️</div>
-            <h3 style={{fontSize:17, marginBottom:8}}>Delete this book?</h3>
-            <p style={{color:"#64748b", marginBottom:22, fontSize:13}}>
+        <div style={M.overlay}>
+          <div style={{...M.modal, maxWidth:400, textAlign:"center", padding:36}}>
+            <div style={{fontSize:52, marginBottom:12}}>🗑️</div>
+            <h3 style={{fontSize:18, color:"#0f172a", marginBottom:8}}>Delete this book?</h3>
+            <p style={{color:"#64748b", fontSize:14, marginBottom:24}}>
               "<b>{delTarget.title}</b>" will be permanently removed.
             </p>
             <div style={{display:"flex", gap:10, justifyContent:"center"}}>
-              <button style={P.cancelBtn} onClick={() => setDelTarget(null)}>Cancel</button>
-              <button style={{...P.saveBtn, background:"#dc2626"}} onClick={() => handleDelete(delTarget.id)}>Yes, Delete</button>
+              <button style={M.cancelBtn} onClick={() => setDelTarget(null)}>Cancel</button>
+              <button
+                style={{...M.saveBtn, background:"#dc2626"}}
+                onClick={() => handleDelete(delTarget.id)}
+              >Yes, Delete</button>
             </div>
           </div>
         </div>
@@ -517,77 +653,103 @@ export default function BookManagement({ userRole = "MEMBER" }) {
   );
 }
 
-// ── Card styles ───────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// Card Styles
+// ═════════════════════════════════════════════════════════════════════════════
 const C = {
-  wrap:   { background:"#fff", borderRadius:14, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,0,0,0.08)", border:"1px solid #e2e8f0" },
-  coverBox: { position:"relative", height:200, overflow:"hidden", background:"#f1f5f9" },
-  img:    { width:"100%", height:"100%", objectFit:"cover", display:"block", transition:"opacity 0.3s" },
-  placeholder: { position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" },
-  placeholderLetter: { fontSize:64, fontWeight:800, color:"rgba(255,255,255,0.7)", fontFamily:"Georgia,serif" },
-  availBadge: { position:"absolute", top:10, right:10, color:"#fff", fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:20 },
-  overlay: { position:"absolute", inset:0, background:"rgba(0,0,0,0.55)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:10, transition:"opacity 0.2s", pointerEvents:"auto" },
-  editBtn:{ background:"#fff", border:"none", padding:"8px 20px", borderRadius:8, fontWeight:700, fontSize:13, cursor:"pointer", color:"#1d4ed8", width:120 },
-  delBtn: { background:"rgba(220,38,38,0.9)", border:"none", padding:"8px 20px", borderRadius:8, fontWeight:700, fontSize:13, cursor:"pointer", color:"#fff", width:120 },
-  info:   { padding:"12px 14px" },
-  deptTag:{ display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20, marginBottom:5, letterSpacing:"0.5px", textTransform:"uppercase" },
-  title:  { fontSize:14, fontWeight:700, color:"#0f172a", margin:"0 0 3px", lineHeight:1.3 },
-  author: { fontSize:12, color:"#64748b", margin:"0 0 7px" },
-  tags:   { display:"flex", gap:5, flexWrap:"wrap", marginBottom:6 },
-  genreTag:{ background:"#eff6ff", color:"#2563eb", padding:"2px 7px", borderRadius:12, fontSize:10, fontWeight:600 },
-  yearTag: { background:"#f1f5f9", color:"#64748b", padding:"2px 7px", borderRadius:12, fontSize:10 },
-  copies: { fontSize:11, color:"#94a3b8", margin:0 },
+  wrap:      { background:"#fff", borderRadius:14, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,0,0,0.08)", border:"1px solid #e2e8f0" },
+  coverBox:  { position:"relative", height:200, overflow:"hidden", background:"#f1f5f9" },
+  img:       { width:"100%", height:"100%", objectFit:"cover", display:"block", transition:"opacity 0.3s" },
+  placeholder:{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" },
+  letter:    { fontSize:64, fontWeight:800, color:"rgba(255,255,255,0.7)", fontFamily:"Georgia,serif" },
+  availBadge:{ position:"absolute", top:10, right:10, color:"#fff", fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:20 },
+  overlay:   { position:"absolute", inset:0, background:"rgba(0,0,0,0.55)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:10, transition:"opacity 0.2s" },
+  editBtn:   { background:"#fff", border:"none", padding:"8px 20px", borderRadius:8, fontWeight:700, fontSize:13, cursor:"pointer", color:"#1d4ed8", width:120 },
+  delBtn:    { background:"rgba(220,38,38,0.9)", border:"none", padding:"8px 20px", borderRadius:8, fontWeight:700, fontSize:13, cursor:"pointer", color:"#fff", width:120 },
+  info:      { padding:"12px 14px" },
+  deptTag:   { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20, marginBottom:5, letterSpacing:"0.5px", textTransform:"uppercase" },
+  title:     { fontSize:14, fontWeight:700, color:"#0f172a", margin:"0 0 3px", lineHeight:1.3 },
+  author:    { fontSize:12, color:"#64748b", margin:"0 0 7px" },
+  tags:      { display:"flex", gap:5, flexWrap:"wrap", marginBottom:6 },
+  genreTag:  { background:"#eff6ff", color:"#2563eb", padding:"2px 7px", borderRadius:12, fontSize:10, fontWeight:600 },
+  yearTag:   { background:"#f1f5f9", color:"#64748b", padding:"2px 7px", borderRadius:12, fontSize:10 },
+  copies:    { fontSize:11, color:"#94a3b8", margin:0 },
 };
 
-// ── Page styles ───────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// Modal Styles
+// ═════════════════════════════════════════════════════════════════════════════
+const M = {
+  overlay:  { position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 },
+  modal:    { background:"#ffffff", borderRadius:20, width:"100%", maxWidth:720, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 30px 80px rgba(0,0,0,0.25)", display:"flex", flexDirection:"column" },
+
+  header:   { display:"flex", justifyContent:"space-between", alignItems:"flex-start", padding:"24px 28px 0", borderBottom:"1px solid #f1f5f9", paddingBottom:16 },
+  title:    { fontSize:22, fontWeight:800, color:"#0f172a", margin:0 },
+  subtitle: { fontSize:13, color:"#64748b", marginTop:4 },
+  closeBtn: { background:"#f1f5f9", border:"none", borderRadius:10, width:36, height:36, cursor:"pointer", fontSize:16, fontWeight:700, color:"#64748b", flexShrink:0 },
+
+  errBox:   { margin:"12px 28px 0", background:"#fef2f2", border:"1px solid #fecaca", color:"#dc2626", padding:"10px 14px", borderRadius:10, fontSize:13 },
+
+  body:     { padding:"20px 28px", flex:1 },
+
+  section:  { marginBottom:24 },
+  sectionTitle: { fontSize:13, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:14, paddingBottom:8, borderBottom:"1px solid #f1f5f9" },
+
+  // Cover upload
+  coverRow:     { display:"flex", gap:20, alignItems:"flex-start" },
+  coverPreview: { width:100, height:130, borderRadius:12, overflow:"hidden", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", border:"2px dashed #cbd5e1" },
+  coverImg:     { width:"100%", height:"100%", objectFit:"cover" },
+  coverPlaceholder: { display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" },
+  coverInfo:    { flex:1 },
+  coverHint:    { fontSize:12, color:"#64748b", lineHeight:1.6, margin:0 },
+  chooseBtn:    { background:"#3b82f6", color:"#fff", border:"none", padding:"8px 16px", borderRadius:8, cursor:"pointer", fontWeight:600, fontSize:13 },
+  removeBtn:    { background:"#fef2f2", color:"#dc2626", border:"1px solid #fecaca", padding:"8px 14px", borderRadius:8, cursor:"pointer", fontWeight:600, fontSize:13 },
+
+  // Form
+  grid2:    { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px 20px" },
+  field:    { display:"flex", flexDirection:"column", gap:6 },
+  label:    { fontSize:12, fontWeight:700, color:"#374151", letterSpacing:"0.3px" },
+  input:    {
+    padding:"11px 14px",
+    border:"1.5px solid #e5e7eb",
+    borderRadius:10,
+    fontSize:14,
+    color:"#111827",
+    background:"#ffffff",
+    outline:"none",
+    fontFamily:"inherit",
+    transition:"border-color 0.2s, box-shadow 0.2s",
+    width:"100%",
+    boxSizing:"border-box",
+  },
+
+  footer:    { display:"flex", justifyContent:"flex-end", gap:10, padding:"16px 28px", borderTop:"1px solid #f1f5f9" },
+  cancelBtn: { padding:"11px 24px", border:"1.5px solid #e5e7eb", borderRadius:10, background:"#fff", cursor:"pointer", fontWeight:600, fontSize:14, color:"#64748b" },
+  saveBtn:   { padding:"11px 28px", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", border:"none", borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:14, boxShadow:"0 4px 12px rgba(37,99,235,0.3)" },
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Page Styles
+// ═════════════════════════════════════════════════════════════════════════════
 const P = {
-  page:    { padding:28, fontFamily:"'Segoe UI',sans-serif", background:"#f8fafc", minHeight:"100vh" },
-  header:  { display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 },
-  title:   { fontSize:26, fontWeight:800, color:"#0f172a", margin:"0 0 4px" },
-  sub:     { fontSize:13, color:"#64748b", margin:0 },
-  addBtn:  { background:"linear-gradient(135deg,#2563eb,#1d4ed8)", color:"#fff", border:"none", padding:"12px 22px", borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:14, boxShadow:"0 4px 12px rgba(37,99,235,0.3)", whiteSpace:"nowrap" },
-  success: { background:"#dcfce7", color:"#166534", padding:"12px 16px", borderRadius:10, marginBottom:14, fontWeight:600 },
-  errBanner:{ background:"#fee2e2", color:"#991b1b", padding:"12px 16px", borderRadius:10, marginBottom:14, fontWeight:600 },
-  statsBar:{ display:"flex", gap:20, marginBottom:14, padding:"10px 16px", background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", flexWrap:"wrap", alignItems:"center" },
-  stat:    { fontSize:13, color:"#475569" },
-
-  // dept chips
-  chipRow: { display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 },
-  chip:    { padding:"5px 13px", borderRadius:20, fontSize:12, fontWeight:600, cursor:"pointer", border:"1.5px solid #e2e8f0", background:"#f1f5f9", color:"#475569", transition:"all 0.15s", whiteSpace:"nowrap" },
-  chipOn:  { background:"#1d4ed8", color:"#fff", border:"1.5px solid #1d4ed8" },
-
-  filterRow:  { display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" },
-  searchWrap: { flex:1, minWidth:200, position:"relative", display:"flex", alignItems:"center" },
-  searchIcon: { position:"absolute", left:12, fontSize:15, pointerEvents:"none" },
-  searchInput:{ width:"100%", padding:"10px 36px", border:"1px solid #e2e8f0", borderRadius:10, fontSize:14, background:"#fff", outline:"none", boxSizing:"border-box" },
-  clearBtn:   { position:"absolute", right:10, background:"none", border:"none", cursor:"pointer", color:"#94a3b8" },
-  select:     { padding:"10px 14px", border:"1px solid #e2e8f0", borderRadius:10, fontSize:14, background:"#fff", cursor:"pointer", outline:"none" },
-
-  grid:   { display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))", gap:20 },
-  center: { textAlign:"center", padding:"80px 0", color:"#64748b" },
-
-  // modal
-  overlay:  { position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 },
-  modal:    { background:"#fff", borderRadius:16, padding:28, width:"100%", maxWidth:680, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 25px 60px rgba(0,0,0,0.2)" },
-  mHead:    { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 },
-  mTitle:   { fontSize:19, fontWeight:700, color:"#0f172a", margin:0 },
-  closeBtn: { background:"#f1f5f9", border:"none", borderRadius:8, width:32, height:32, cursor:"pointer", fontSize:14, fontWeight:700, color:"#64748b" },
-
-  // upload
-  uploadBox:  { marginBottom:16, padding:14, background:"#f8fafc", borderRadius:10, border:"1px solid #e2e8f0" },
-  uploadRow:  { display:"flex", gap:16, alignItems:"flex-start", marginTop:8 },
-  previewBox: { width:90, height:118, borderRadius:8, overflow:"hidden", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", border:"2px dashed #cbd5e1" },
-  previewImg: { width:"100%", height:"100%", objectFit:"cover" },
-  previewPlaceholder: { display:"flex", flexDirection:"column", alignItems:"center", color:"rgba(255,255,255,0.85)" },
-  pickBtn:    { background:"#2563eb", color:"#fff", border:"none", padding:"7px 15px", borderRadius:8, cursor:"pointer", fontWeight:600, fontSize:13, marginRight:8 },
-  clearImgBtn:{ background:"#fee2e2", color:"#dc2626", border:"none", padding:"7px 13px", borderRadius:8, cursor:"pointer", fontWeight:600, fontSize:13 },
-
-  formGrid: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 },
-  fg:       { display:"flex", flexDirection:"column" },
-  label:    { fontSize:11, fontWeight:700, color:"#475569", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.5px" },
-  input:    { padding:"9px 12px", border:"1px solid #e2e8f0", borderRadius:8, fontSize:14, outline:"none", background:"#f8fafc", fontFamily:"inherit" },
-  formErr:  { background:"#fee2e2", color:"#dc2626", padding:"10px 14px", borderRadius:8, marginBottom:14, fontSize:13 },
-
-  mFoot:     { display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 },
-  cancelBtn: { padding:"10px 22px", border:"1px solid #e2e8f0", borderRadius:8, background:"#fff", cursor:"pointer", fontWeight:600, fontSize:14, color:"#64748b" },
-  saveBtn:   { padding:"10px 22px", background:"#2563eb", color:"#fff", border:"none", borderRadius:8, cursor:"pointer", fontWeight:700, fontSize:14 },
+  page:      { padding:28, fontFamily:"'Segoe UI',sans-serif", background:"#f8fafc", minHeight:"100vh" },
+  header:    { display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 },
+  title:     { fontSize:26, fontWeight:800, color:"#0f172a", margin:"0 0 4px" },
+  sub:       { fontSize:13, color:"#64748b", margin:0 },
+  addBtn:    { background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", border:"none", padding:"12px 22px", borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:14, boxShadow:"0 4px 12px rgba(37,99,235,0.3)", whiteSpace:"nowrap" },
+  success:   { background:"#dcfce7", color:"#166534", padding:"12px 16px", borderRadius:10, marginBottom:14, fontWeight:600 },
+  errBanner: { background:"#fee2e2", color:"#991b1b", padding:"12px 16px", borderRadius:10, marginBottom:14, fontWeight:600 },
+  statsBar:  { display:"flex", gap:20, marginBottom:14, padding:"10px 16px", background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", flexWrap:"wrap", alignItems:"center" },
+  stat:      { fontSize:13, color:"#475569" },
+  chipRow:   { display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 },
+  chip:      { padding:"5px 13px", borderRadius:20, fontSize:12, fontWeight:600, cursor:"pointer", border:"1.5px solid #e2e8f0", background:"#f1f5f9", color:"#475569", transition:"all 0.15s", whiteSpace:"nowrap" },
+  chipOn:    { background:"#1d4ed8", color:"#fff", border:"1.5px solid #1d4ed8" },
+  filterRow: { display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" },
+  searchWrap:{ flex:1, minWidth:200, position:"relative", display:"flex", alignItems:"center" },
+  searchIcon:{ position:"absolute", left:12, fontSize:15, pointerEvents:"none" },
+  searchInput:{ width:"100%", padding:"10px 36px", border:"1px solid #e2e8f0", borderRadius:10, fontSize:14, background:"#fff", outline:"none", boxSizing:"border-box", color:"#0f172a" },
+  clearBtn:  { position:"absolute", right:10, background:"none", border:"none", cursor:"pointer", color:"#94a3b8" },
+  select:    { padding:"10px 14px", border:"1px solid #e2e8f0", borderRadius:10, fontSize:14, background:"#fff", cursor:"pointer", outline:"none", color:"#0f172a" },
+  grid:      { display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))", gap:20 },
+  center:    { textAlign:"center", padding:"80px 0", color:"#64748b" },
 };

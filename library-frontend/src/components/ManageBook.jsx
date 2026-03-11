@@ -25,7 +25,7 @@ const GlobalStyle = () => (
 
     :root {
       --ink: #0d0d0d;
-      --cream: #faf8f3;
+      --cream: #83c33e;
       --gold: #c9943a;
       --gold-light: #f0d898;
       --sage: #4a7c59;
@@ -242,7 +242,7 @@ const GlobalStyle = () => (
     }
     tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
     tbody tr:hover { background: rgba(255,255,255,0.03); }
-    tbody td { padding: 14px 16px; font-size: 13px; color: rgba(250,248,243,0.8); }
+    tbody td { padding: 14px 16px; font-size: 13px; color: rgba(152, 120, 40, 0.8); }
 
     .otp-inputs { display: flex; gap: 10px; justify-content: center; margin: 24px 0; }
     .otp-box {
@@ -346,8 +346,8 @@ const GlobalStyle = () => (
       padding: 28px;
     }
     .feature-icon { font-size: 28px; margin-bottom: 14px; }
-    .feature-card h3 { font-size: 16px; margin-bottom: 8px; color: var(--cream); }
-    .feature-card p { font-size: 13px; color: rgba(250,248,243,0.5); line-height: 1.6; }
+    .feature-card h3 { font-size: 16px; margin-bottom: 8px; color:  rgba(66, 202, 68, 0.5); }
+    .feature-card p { font-size: 13px; color: rgba(66, 202, 68, 0.5); line-height: 1.6; }
   `}</style>
 );
 // ─────────────────────────────────────────────
@@ -454,7 +454,7 @@ function BookManager() {
 
       {/* Add / Edit Form */}
       {showForm && (
-        <div className="card" style={{ marginBottom: 24, borderColor: "rgba(201,148,58,0.4)" }}>
+        <div className="card" style={{ marginBottom: 24, borderColor: "rgba(54, 40, 8, 0.4)" }}>
           <h3 style={{ marginBottom: 20 }}>{editingBook ? "✏️ Edit Book" : "➕ Add New Book"}</h3>
           <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div className="form-group">
