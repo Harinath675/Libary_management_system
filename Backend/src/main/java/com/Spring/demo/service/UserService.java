@@ -511,7 +511,7 @@ public class UserService {
     userRepository.save(user);
 
     // Send OTP email to everyone
-    emailService.sendOtp(user.getEmail(), otp);
+emailService.sendOtp(user.getEmail(), user.getName(), otp);
 
     return user;
 }
@@ -586,7 +586,7 @@ public class UserService {
         user.setApproved(true);
         userRepository.save(user);
 
-        emailService.sendApprovalMail(user.getEmail(), user.getRole().name());
+emailService.sendWelcome(user.getEmail(), user.getName());
 
         return "User approved successfully";
     }
