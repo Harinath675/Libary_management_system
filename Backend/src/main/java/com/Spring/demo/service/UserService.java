@@ -455,7 +455,6 @@
 
 
 package com.Spring.demo.service;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -470,6 +469,8 @@ import com.Spring.demo.repository.UserRepository;
 
 @Service
 public class UserService {
+
+    
 
     @Autowired
     private UserRepository userRepository;
@@ -514,6 +515,19 @@ public class UserService {
 emailService.sendOtp(user.getEmail(), user.getName(), otp);
 
     return user;
+}
+public void changePassword(String email, String currentPassword, String newPassword) {
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+    // Check current password matches
+    if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+        throw new RuntimeException("Current password is incorrect");
+    }
+
+    // Set new password (encoded)
+    user.setPassword(passwordEncoder.encode(newPassword));
+    userRepository.save(user);
 }
 
     // ✅ VERIFY OTP (MEMBER ONLY)

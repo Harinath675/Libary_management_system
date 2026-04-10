@@ -1096,6 +1096,237 @@ function MemberReservations({ user }) {
 }
 
 // ── MANAGE BORROWINGS ─────────────────────────────────────────────────────────
+function ReturnModal({ borrowing, onClose, onConfirm }) {
+  const [damaged,      setDamaged]      = useState(false);
+  const [damageFine,   setDamageFine]   = useState("");
+  const [damageReason, setDamageReason] = useState("");
+  const [loading,      setLoading]      = useState(false);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    await onConfirm({
+      damaged,
+      damageFine:   damaged ? parseFloat(damageFine || 0) : 0,
+      damageReason: damaged ? damageReason : null,
+    });
+    setLoading(false);
+  };
+
+  const overdueFine = (() => {
+    if (!borrowing.dueDate) return 0;
+    const due = new Date(borrowing.dueDate);
+    const now = new Date();
+    if (now <= due) return 0;
+    const days = Math.ceil((now - due) / (1000 * 60 * 60 * 24));
+    return Math.max(1, days) * 10;
+  })();
+
+  const totalPreview = overdueFine + parseFloat(damageFine || 0);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position:"fixed", inset:0,
+          background:"rgba(0,0,0,0.6)",
+          zIndex:10000,
+        }}
+      />
+
+      {/* Scrollable wrapper centers the modal */}
+      <div style={{
+        position:"fixed", inset:0,
+        zIndex:10001,
+        overflowY:"auto",
+        display:"flex",
+        alignItems:"flex-start",
+        justifyContent:"center",
+        padding:"20px 16px",
+      }}>
+
+        {/* Modal card */}
+        <div style={{
+          width:"100%",
+          maxWidth:460,
+          background:"var(--bg2)",
+          border:"1.5px solid rgba(232,160,32,0.28)",
+          borderRadius:18,
+          padding:24,
+          marginTop:"auto",
+          marginBottom:"auto",
+        }}>
+
+          {/* Header */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+            <div style={{
+              width:40, height:40, borderRadius:10,
+              background:"linear-gradient(135deg,var(--teal),var(--teal2))",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:20, flexShrink:0,
+            }}>📥</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontWeight:700, fontSize:16, color:"var(--text)" }}>Return Book</div>
+              <div style={{ fontSize:12, color:"var(--text2)" }}>{borrowing.memberName} — {borrowing.bookTitle}</div>
+            </div>
+            <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--text3)", fontSize:18, cursor:"pointer", lineHeight:1 }}>✕</button>
+          </div>
+
+          {/* Info row */}
+          <div style={{
+            display:"grid", gridTemplateColumns:"1fr 1fr",
+            gap:10, marginBottom:18,
+            background:"var(--surface)",
+            border:"1.5px solid var(--border)",
+            borderRadius:12, padding:14,
+          }}>
+            {[
+              { label:"Member",       value: borrowing.memberName },
+              { label:"Book",         value: borrowing.bookTitle  },
+              { label:"Due Date",     value: borrowing.dueDate ? new Date(borrowing.dueDate).toLocaleDateString("en-IN") : "—" },
+              { label:"Overdue Fine", value: `₹${overdueFine}`, red: overdueFine > 0 },
+            ].map((r,i) => (
+              <div key={i}>
+                <div style={{ fontSize:10, color:"var(--text3)", textTransform:"uppercase", letterSpacing:"0.8px", fontWeight:700, marginBottom:2 }}>{r.label}</div>
+                <div style={{ fontSize:13, fontWeight:600, color: r.red ? "#F87171" : "var(--text)" }}>{r.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Damage question */}
+          <div style={{
+            background: damaged ? "rgba(225,29,72,0.06)" : "var(--surface)",
+            border:`1.5px solid ${damaged ? "rgba(225,29,72,0.30)" : "var(--border)"}`,
+            borderRadius:12, padding:14, marginBottom:14,
+          }}>
+            <div style={{ fontWeight:700, fontSize:13, color:"var(--text)", marginBottom:12 }}>
+              📋 Is the book damaged?
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button
+                onClick={() => { setDamaged(false); setDamageFine(""); setDamageReason(""); }}
+                style={{
+                  flex:1, padding:"10px", borderRadius:8, fontSize:13, fontWeight:700,
+                  background: !damaged ? "linear-gradient(135deg,var(--teal),var(--teal2))" : "var(--surface2)",
+                  border: !damaged ? "none" : "1.5px solid var(--border)",
+                  color: !damaged ? "#fff" : "var(--text2)",
+                  cursor:"pointer", fontFamily:"'Outfit',sans-serif",
+                }}
+              >✅ No Damage</button>
+              <button
+                onClick={() => setDamaged(true)}
+                style={{
+                  flex:1, padding:"10px", borderRadius:8, fontSize:13, fontWeight:700,
+                  background: damaged ? "rgba(225,29,72,0.15)" : "var(--surface2)",
+                  border: damaged ? "1.5px solid rgba(225,29,72,0.45)" : "1.5px solid var(--border)",
+                  color: damaged ? "#F87171" : "var(--text2)",
+                  cursor:"pointer", fontFamily:"'Outfit',sans-serif",
+                }}
+              >⚠️ Book Damaged</button>
+            </div>
+          </div>
+
+          {/* Damage details */}
+          {damaged && (
+            <div style={{
+              background:"rgba(225,29,72,0.05)",
+              border:"1.5px solid rgba(225,29,72,0.22)",
+              borderRadius:12, padding:14, marginBottom:14,
+            }}>
+              {/* Reason input */}
+              <div className="form-group" style={{ marginBottom:12 }}>
+                <label style={{ color:"#F87171" }}>Damage Description</label>
+                <input
+                  placeholder="e.g. Torn pages, water damage..."
+                  value={damageReason}
+                  onChange={e => setDamageReason(e.target.value)}
+                  style={{ borderColor:"rgba(225,29,72,0.35)", padding:"10px 12px" }}
+                />
+              </div>
+
+              {/* Preset chips */}
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, color:"#F87171", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:8 }}>
+                  Quick Amount
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  {[50,100,200,500].map(amt => (
+                    <button
+                      key={amt}
+                      onClick={() => setDamageFine(amt.toString())}
+                      style={{
+                        flex:1, padding:"7px 0", borderRadius:20, fontSize:12, fontWeight:700,
+                        background: damageFine===amt.toString() ? "rgba(225,29,72,0.20)" : "var(--surface)",
+                        border: damageFine===amt.toString() ? "1.5px solid rgba(225,29,72,0.55)" : "1.5px solid var(--border)",
+                        color: damageFine===amt.toString() ? "#F87171" : "var(--text2)",
+                        cursor:"pointer", fontFamily:"'Outfit',sans-serif",
+                      }}
+                    >₹{amt}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom input */}
+              <div className="form-group" style={{ marginBottom: damageFine && parseFloat(damageFine)>0 ? 12 : 0 }}>
+                <label style={{ color:"#F87171" }}>Custom Amount (₹)</label>
+                <input
+                  type="number" min={0}
+                  placeholder="Enter custom damage fine"
+                  value={damageFine}
+                  onChange={e => setDamageFine(e.target.value)}
+                  style={{ borderColor:"rgba(225,29,72,0.35)", padding:"10px 12px" }}
+                />
+              </div>
+
+              {/* Total preview */}
+              {damageFine && parseFloat(damageFine) > 0 && (
+                <div style={{
+                  padding:"10px 14px", background:"rgba(225,29,72,0.10)",
+                  borderRadius:8, fontSize:13, color:"#F87171", fontWeight:700,
+                }}>
+                  💰 Total = ₹{totalPreview.toFixed(0)}
+                  <span style={{ fontWeight:400, fontSize:11, color:"var(--text2)", marginLeft:6 }}>
+                    (₹{overdueFine} overdue + ₹{parseFloat(damageFine).toFixed(0)} damage)
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div style={{ display:"flex", gap:10 }}>
+            <button onClick={onClose} className="btn-ghost" style={{ flex:1, padding:"11px" }}>
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={loading || (damaged && !damageFine)}
+              style={{
+                flex:2, padding:"11px", borderRadius:10, fontSize:14, fontWeight:700,
+                background: damaged
+                  ? "linear-gradient(135deg,#E11D48,#BE123C)"
+                  : "linear-gradient(135deg,var(--teal),var(--teal2))",
+                border:"none", color:"#fff",
+                cursor:(loading||(damaged&&!damageFine))?"not-allowed":"pointer",
+                opacity:(loading||(damaged&&!damageFine))?0.5:1,
+                fontFamily:"'Outfit',sans-serif",
+              }}
+            >
+              {loading
+                ? <Spinner />
+                : damaged
+                  ? `⚠️ Return + ₹${parseFloat(damageFine||0).toFixed(0)} Fine`
+                  : "📥 Confirm Return"}
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </>
+  );
+}
+
 function ManageBorrowings({ userRole }) {
   const [requests, setRequests] = useState([]);
   const [borrowings, setBorrowings] = useState([]);
@@ -1104,6 +1335,7 @@ function ManageBorrowings({ userRole }) {
   const [dueDays, setDueDays] = useState(14);
   const [approving, setApproving] = useState(null);
   const [search, setSearch] = useState("");
+  const [returnModal, setReturnModal] = useState(null);
   const fetchAll = async () => {
     try {
       const [rR, bR] = await Promise.allSettled([fetch(`${API}/borrow/requests/all`,{headers:authHeaders()}), fetch(`${API}/borrow/borrowings/all`,{headers:authHeaders()})]);
@@ -1129,15 +1361,21 @@ function ManageBorrowings({ userRole }) {
     } catch { setMsg({ text:"❌ Network error", type:"error" }); }
     setTimeout(() => setMsg({ text:"", type:"" }), 3000);
   };
-  const returnBook = async (id) => {
-    try {
-      const r = await fetch(`${API}/borrow/borrowings/${id}/return`, { method:"PUT", headers:authHeaders() });
-      const txt = await r.text();
-      setMsg({ text: r.ok ? `✅ ${txt}` : `❌ ${txt}`, type: r.ok ? "success" : "error" });
-      if (r.ok) fetchAll();
-    } catch { setMsg({ text:"❌ Network error", type:"error" }); }
-    setTimeout(() => setMsg({ text:"", type:"" }), 4000);
-  };
+const returnBook = async ({ id, damaged, damageFine, damageReason }) => {
+  try {
+    const r = await fetch(`${API}/borrow/borrowings/${id}/return`, {
+      method:  "PUT",
+      headers: authHeaders(),
+      body:    JSON.stringify({ damaged, damageFine, damageReason }),
+    });
+    const txt = await r.text();
+    setMsg({ text: r.ok ? `✅ ${txt}` : `❌ ${txt}`, type: r.ok ? "success" : "error" });
+    if (r.ok) { setReturnModal(null); fetchAll(); }
+  } catch {
+    setMsg({ text:"❌ Network error", type:"error" });
+  }
+  setTimeout(() => setMsg({ text:"", type:"" }), 4000);
+};
   const payFine = async (memberId, memberName) => {
     try {
       const r = await fetch(`${API}/borrow/borrowings/${memberId}/pay-fine`, { method:"PUT", headers:authHeaders() });
@@ -1205,7 +1443,10 @@ function ManageBorrowings({ userRole }) {
                 <td style={{ color:b.status==="OVERDUE"?"#F87171":"var(--teal2)", fontWeight:600 }}>{b.dueDate?new Date(b.dueDate).toLocaleDateString():"—"}</td>
                 <td style={{ color:b.fineAmount>0?"#F87171":"var(--teal2)", fontWeight:700 }}>₹{b.fineAmount?.toFixed(0)||0}</td>
                 <td><StatusBadge status={b.status} /></td>
-                <td><button className="btn-teal" style={{ padding:"6px 14px", fontSize:12 }} onClick={()=>returnBook(b.id)}>📥 Return</button></td>
+                <td><button className="btn-teal" style={{ padding:"6px 14px", fontSize:12 }}
+  onClick={() => setReturnModal(b)}>
+  📥 Return
+</button></td>
               </tr>
             ))}
           </tbody></table></div>}
@@ -1248,6 +1489,16 @@ function ManageBorrowings({ userRole }) {
           </tbody></table></div>}
         </div>
       )}
+
+      {/* Return Modal */}
+      {returnModal && (
+        <ReturnModal
+          borrowing={returnModal}
+          onClose={() => setReturnModal(null)}
+          onConfirm={(data) => returnBook({ id:returnModal.id, ...data })}
+        />
+      )}
+
     </div>
   );
 }
@@ -1667,6 +1918,154 @@ function MyBooks({ user }) {
 }
 
 // ── ADMIN DASHBOARD ───────────────────────────────────────────────────────────
+// ── FINE ANALYTICS PANEL ──────────────────────────────────────────────────────
+function FineAnalyticsPanel() {
+  const [borrowings, setBorrowings] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`${API}/borrow/borrowings/all`, { headers:authHeaders() });
+      if (r.ok) setBorrowings(await r.json());
+    } catch {} finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const unpaidFines  = borrowings.filter(b => b.fineAmount > 0 && !b.finePaid);
+  const paidFines    = borrowings.filter(b => b.fineAmount > 0 &&  b.finePaid);
+  const damagedBooks = borrowings.filter(b => b.damaged && (b.damageFine||0) > 0);
+
+  const totalPending   = unpaidFines.reduce((s,b)  => s + b.fineAmount, 0);
+  const totalCollected = paidFines.reduce((s,b)    => s + b.fineAmount, 0);
+  const totalDamage    = damagedBooks.reduce((s,b)  => s + (b.damageFine||0), 0);
+
+  // Group unpaid by member
+  const memberFineMap = {};
+  unpaidFines.forEach(b => {
+    if (!memberFineMap[b.memberId]) {
+      memberFineMap[b.memberId] = {
+        name:"", email:"", overdueFine:0, damageFine:0, total:0, books:[],
+      };
+    }
+    const m = memberFineMap[b.memberId];
+    m.name  = b.memberName;
+    m.email = b.memberEmail;
+    m.damageFine  += (b.damageFine||0);
+    m.overdueFine += (b.fineAmount - (b.damageFine||0));
+    m.total       += b.fineAmount;
+    m.books.push(b.bookTitle);
+  });
+  const memberFines = Object.values(memberFineMap).sort((a,b)=>b.total-a.total);
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Fine Analytics</h1>
+        <p>Complete breakdown of all fines — overdue and damage</p>
+      </div>
+
+      {/* Stat cards */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))", gap:16, marginBottom:28 }}>
+        {[
+          { icon:"💰", label:"Total Pending",      value:`₹${totalPending.toFixed(0)}`,   color:"#F87171"       },
+          { icon:"✅", label:"Total Collected",     value:`₹${totalCollected.toFixed(0)}`, color:"var(--teal2)"  },
+          { icon:"⚠️", label:"Damage Fines",        value:`₹${totalDamage.toFixed(0)}`,    color:"var(--amber)"  },
+          { icon:"👤", label:"Members with Fines",  value: memberFines.length,             color:"#818CF8"       },
+          { icon:"📚", label:"Damaged Books",       value: damagedBooks.length,            color:"var(--amber2)" },
+          { icon:"🔒", label:"Blocked Accounts",    value: memberFines.filter(m=>m.total>=500).length, color:"#F87171" },
+        ].map((s,i)=>(
+          <div className="stat-card" key={i}>
+            <div className="stat-icon">{s.icon}</div>
+            <div className="stat-num" style={{ fontSize:28, color:s.color }}>{s.value}</div>
+            <div className="stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Members with outstanding fines */}
+      <div className="card" style={{ marginBottom:24 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22 }}>
+            Members with Outstanding Fines
+          </h3>
+          <button className="btn-ghost" onClick={fetchData} style={{ padding:"7px 14px", fontSize:12 }}>
+            🔄 Refresh
+          </button>
+        </div>
+        {loading
+          ? <div style={{ textAlign:"center", padding:48 }}><Spinner size={28}/></div>
+          : memberFines.length === 0
+            ? <div style={{ textAlign:"center", padding:48, color:"var(--text2)" }}>
+                <div style={{ fontSize:44, marginBottom:12 }}>✅</div>
+                <p>No outstanding fines!</p>
+              </div>
+            : <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Member</th>
+                      <th>Overdue Fine</th>
+                      <th>Damage Fine</th>
+                      <th>Total Due</th>
+                      <th>Status</th>
+                      <th>Books</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {memberFines.map((m,i)=>(
+                      <tr key={i}>
+                        <td>
+                          <div style={{ fontWeight:700 }}>{m.name}</div>
+                          <div style={{ fontSize:11, color:"var(--text3)" }}>{m.email}</div>
+                        </td>
+                        <td style={{ color:"var(--amber)", fontWeight:700 }}>₹{m.overdueFine.toFixed(0)}</td>
+                        <td style={{ color:"#F87171", fontWeight:700 }}>{m.damageFine>0?`₹${m.damageFine.toFixed(0)}`:"—"}</td>
+                        <td style={{ color:"#F87171", fontWeight:800, fontSize:16 }}>₹{m.total.toFixed(0)}</td>
+                        <td>{m.total>=500?<span className="badge badge-blocked">🔒 BLOCKED</span>:<span className="badge badge-pending">Active</span>}</td>
+                        <td style={{ fontSize:12, color:"var(--text2)" }}>{m.books.join(", ")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+        }
+      </div>
+
+      {/* Damaged books */}
+      {damagedBooks.length > 0 && (
+        <div className="card">
+          <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, marginBottom:18 }}>
+            Damaged Book Records
+          </h3>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Member</th><th>Book</th><th>Damage Fine</th>
+                  <th>Reason</th><th>Returned On</th><th>Fine Paid</th>
+                </tr>
+              </thead>
+              <tbody>
+                {damagedBooks.map((b,i)=>(
+                  <tr key={i}>
+                    <td style={{ fontWeight:600 }}>{b.memberName}</td>
+                    <td style={{ fontWeight:600 }}>{b.bookTitle}</td>
+                    <td style={{ color:"#F87171", fontWeight:700 }}>₹{b.damageFine}</td>
+                    <td style={{ color:"var(--text2)", fontSize:12 }}>{b.damageReason||"—"}</td>
+                    <td style={{ color:"var(--text2)" }}>{b.returnedAt?new Date(b.returnedAt).toLocaleDateString("en-IN"):"—"}</td>
+                    <td>{b.finePaid?<span className="badge badge-approved">✅ Paid</span>:<span className="badge badge-rejected">Unpaid</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 function AdminDashboard({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState("home");
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -1689,11 +2088,13 @@ function AdminDashboard({ user, onLogout }) {
     {id:"borrowings",icon:"📦",label:"Manage Borrows"},
     {id:"subscriptions",icon:"🎫",label:"Subscriptions"},
     {id:"pending",icon:"⏳",label:"Pending Approvals",badge:pendingUsers.length},
+    {id:"fineanalytics", icon:"📊", label:"Fine Analytics"},
     {id:"users",icon:"👥",label:"All Users"},
     {id:"profile",icon:"👤",label:"My Profile"},
   ];
   const STATS = [
     {icon:"📚",num:bs.total,label:"Total Books",c:"var(--amber)"},{icon:"✅",num:bs.available,label:"Available",c:"var(--teal2)"},{icon:"❌",num:bs.unavailable,label:"Unavailable",c:"#F87171"},
+    {icon:"📊", label:"Fine Analytics", c:"rgba(225,29,72,0.15)", t:"fineanalytics"},
     {icon:"👥",num:allUsers.length,label:"Total Users",c:"#818CF8"},{icon:"⏳",num:pendingUsers.length,label:"Pending",c:"var(--amber2)"},{icon:"📖",num:allUsers.filter(u=>u.role==="LIBRARIAN").length,label:"Librarians",c:"var(--teal2)"},
   ];
   return (
@@ -1711,7 +2112,7 @@ function AdminDashboard({ user, onLogout }) {
                 <div className="card">
                   <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, marginBottom:18 }}>Quick Actions</h3>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:12 }}>
-                    {[{icon:"📖",label:"Manage Books",c:"rgba(232,160,32,0.15)",t:"books"},{icon:"📌",label:"Reservations",c:"rgba(13,148,136,0.15)",t:"reservations"},{icon:"📦",label:"Manage Borrows",c:"rgba(79,70,229,0.15)",t:"borrowings"},{icon:"🎫",label:"Subscriptions",c:"rgba(232,160,32,0.15)",t:"subscriptions"},{icon:"⏳",label:"Pending Approvals",c:"rgba(245,158,11,0.15)",t:"pending"},{icon:"👥",label:"All Users",c:"rgba(79,70,229,0.15)",t:"users"}].map((a,i)=>(
+                    {[{icon:"📖",label:"Manage Books",c:"rgba(232,160,32,0.15)",t:"books"},{icon:"📌",label:"Reservations",c:"rgba(13,148,136,0.15)",t:"reservations"},{icon:"📦",label:"Manage Borrows",c:"rgba(79,70,229,0.15)",t:"borrowings"},{icon:"📊", label:"Fine Analytics", c:"rgba(225,29,72,0.15)", t:"fineanalytics"},{icon:"🎫",label:"Subscriptions",c:"rgba(232,160,32,0.15)",t:"subscriptions"},{icon:"⏳",label:"Pending Approvals",c:"rgba(245,158,11,0.15)",t:"pending"},{icon:"👥",label:"All Users",c:"rgba(79,70,229,0.15)",t:"users"}].map((a,i)=>(
                       <div key={i} className="action-card" onClick={()=>setActiveTab(a.t)}><div className="action-card-icon" style={{ background:a.c }}>{a.icon}</div><div style={{ fontWeight:600, fontSize:14 }}>{a.label}</div></div>
                     ))}
                   </div>
@@ -1745,6 +2146,7 @@ function AdminDashboard({ user, onLogout }) {
                 </div>
               </div>
             )}
+            {activeTab==="fineanalytics" && <FineAnalyticsPanel />}
             {activeTab==="profile" && <ProfilePanel user={user} />}
           </div>
         )}
@@ -1763,6 +2165,7 @@ function LibrarianDashboard({ user, onLogout }) {
     {id:"books",icon:"📖",label:"Manage Books"},
     {id:"reservations",icon:"📌",label:"Reservations"},
     {id:"borrowings",icon:"📦",label:"Manage Borrows"},
+    {id:"fineanalytics", icon:"📊", label:"Fine Analytics"},
     {id:"profile",icon:"👤",label:"My Profile"},
   ];
   const STATS = [{icon:"📚",num:bs.total,label:"Total Books",c:"var(--amber)"},{icon:"✅",num:bs.available,label:"Available",c:"var(--teal2)"},{icon:"❌",num:bs.unavailable,label:"Unavailable",c:"#F87171"}];

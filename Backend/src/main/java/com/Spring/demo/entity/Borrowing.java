@@ -64,6 +64,7 @@ package com.Spring.demo.entity;
  
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -98,7 +99,15 @@ public class Borrowing {
     private double fineAmount = 0.0;
     private boolean finePaid  = false;
     private boolean renewed   = false;  // true after member renews once — cannot renew again
- 
+
+    @Column(nullable = false)
+private boolean damaged = false;
+
+@Column
+private Double damageFine = 0.0;
+
+@Column
+private String damageReason;
     // Getters and Setters
     public Long getId() { return id; }
     public Long getMemberId() { return memberId; }
@@ -129,4 +138,13 @@ public class Borrowing {
     public void setFinePaid(boolean finePaid) { this.finePaid = finePaid; }
     public boolean isRenewed() { return renewed; }
     public void setRenewed(boolean renewed) { this.renewed = renewed; }
+    public boolean isDamaged() { return damaged; }
+public void setDamaged(boolean damaged) { this.damaged = damaged; }
+
+public Double getDamageFine() { return damageFine; }
+public void setDamageFine(Double damageFine) { this.damageFine = damageFine; }
+
+public String getDamageReason() { return damageReason; }
+public void setDamageReason(String damageReason) { this.damageReason = damageReason; }
+
 }

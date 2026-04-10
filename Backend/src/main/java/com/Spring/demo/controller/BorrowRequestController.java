@@ -247,43 +247,90 @@ long currentBorrows = borrowingRepo.countByMemberIdAndStatus(memberId, "BORROWED
     public List<Borrowing> getAllBorrowings() { return borrowingRepo.findAll(); }
  
     // ── PUT return book ───────────────────────────────────────────────────────
-    @PutMapping("/borrowings/{id}/return")
-    public ResponseEntity<?> returnBook(@PathVariable Long id) {
+  
+    
+@PutMapping("/borrowings/{id}/return")
+public ResponseEntity<String> returnBook(
+        @PathVariable Long id,
+        @RequestBody(required = false) Map<String, Object> body) {
+    try {
+        // ── Parse damage info from request body ──
+        boolean damaged     = false;
+        double  damageFine  = 0.0;
+        String  damageReason = "";
+
+        if (body != null) {
+            damaged = Boolean.TRUE.equals(body.get("damaged"));
+            Object amt = body.get("damageFine");
+            if (amt != null) damageFine = Double.parseDouble(amt.toString());
+            Object reason = body.get("damageReason");
+            if (reason != null) damageReason = reason.toString();
+        }
+
+        // ── Find borrowing ──
         Borrowing b = borrowingRepo.findById(id).orElse(null);
-        if (b == null) return ResponseEntity.notFound().build();
-        if ("RETURNED".equals(b.getStatus()))
-            return ResponseEntity.badRequest().body("Book already returned");
- 
+        if (b == null) return ResponseEntity.badRequest().body("Borrowing not found");
+
+        // ── Calculate overdue fine ──
+        double overdueFine = 0.0;
         LocalDateTime now = LocalDateTime.now();
         if (b.getDueDate() != null && b.getDueDate().isBefore(now)) {
             long daysOverdue = ChronoUnit.DAYS.between(b.getDueDate(), now);
-            b.setFineAmount(daysOverdue * 10.0);
-        } else {
-            b.setFineAmount(0.0);
+            if (daysOverdue < 1) daysOverdue = 1;
+            overdueFine = daysOverdue * 10.0;
         }
-        b.setReturnedAt(now);
+
+        // ── Apply damage fine ──
+        if (damaged && damageFine > 0) {
+            b.setDamaged(true);
+            b.setDamageFine(damageFine);
+            b.setDamageReason(damageReason);
+        }
+
+        // ── Set total fine = overdue + damage ──
+        double totalFine = overdueFine + (damaged ? damageFine : 0.0);
+        b.setFineAmount(totalFine);
+        b.setFinePaid(totalFine <= 0);
         b.setStatus("RETURNED");
+        b.setReturnedAt(now);
         borrowingRepo.save(b);
- 
+
+        // ── Restore book copy ──
         Book book = bookRepo.findById(b.getBookId()).orElse(null);
         if (book != null) {
-            book.setAvailableCopies((book.getAvailableCopies() != null ? book.getAvailableCopies() : 0) + 1);
+            int current = book.getAvailableCopies() != null ? book.getAvailableCopies() : 0;
+            book.setAvailableCopies(current + 1);
             bookRepo.save(book);
         }
- 
-        double totalUnpaid = borrowingRepo.findByMemberId(b.getMemberId()).stream()
-            .filter(bw -> !bw.isFinePaid() && bw.getFineAmount() > 0)
-            .mapToDouble(Borrowing::getFineAmount).sum();
- 
-        String msg = "Book returned. Fine: ₹" + String.format("%.0f", b.getFineAmount());
+
+        // ── Block member if total unpaid fines >= 500 ──
+        double totalUnpaid = borrowingRepo.findByMemberId(b.getMemberId())
+            .stream()
+            .filter(br -> !br.isFinePaid() && br.getFineAmount() > 0)
+            .mapToDouble(Borrowing::getFineAmount)
+            .sum();
+
         if (totalUnpaid >= 500) {
             User member = userRepo.findById(b.getMemberId()).orElse(null);
-            if (member != null) { member.setApproved(false); userRepo.save(member); }
-            msg += ". Account BLOCKED — total fines ≥ ₹500";
+            if (member != null) {
+                member.setApproved(false);
+                userRepo.save(member);
+            }
+        }
+
+        // ── Build response message ──
+        String msg = "Book returned successfully!";
+        if (totalFine > 0) {
+            msg += " Total fine: ₹" + (int) totalFine;
+            if (damaged && damageFine > 0)
+                msg += " (₹" + (int) overdueFine + " overdue + ₹" + (int) damageFine + " damage)";
         }
         return ResponseEntity.ok(msg);
+
+    } catch (Exception e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
     }
- 
+}
     // ── PUT pay fine ──────────────────────────────────────────────────────────
     @PutMapping("/borrowings/{memberId}/pay-fine")
     public ResponseEntity<?> payFine(@PathVariable Long memberId) {
@@ -366,4 +413,5 @@ long currentBorrows = borrowingRepo.countByMemberIdAndStatus(memberId, "BORROWED
             "newDueDate", newDueDate.toString()
         ));
     }
+    
 }
