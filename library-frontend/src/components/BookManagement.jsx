@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { API, SERVER_URL } from "../config";
  
-const API_BASE = "http://localhost:8080/api";
-const SERVER   = "http://localhost:8080"; // images served at /images/covers/
 const getToken = () => localStorage.getItem("token");
 const authHeaders = () => ({
   "Content-Type": "application/json",

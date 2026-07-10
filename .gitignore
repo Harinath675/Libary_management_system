@@ -14,4 +14,4 @@ dist/
 build/
 
 # Environment
-.env
+.envlibrary-frontend/node_modules/ 

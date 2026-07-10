@@ -6,9 +6,9 @@
 import { useState, useEffect, createContext, useContext, useRef } from 'react';
 import BookManagement from './components/BookManagement';
 import NotificationBell from './components/NotificationBell';
+import { API, SERVER_URL } from './config';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
-export const API = "http://localhost:8080/api";
 export const FINE_PER_DAY = 10;
 export const FINE_BLOCK_LIMIT = 500;
 export const MAX_BORROW_AT_ONCE = 3;
@@ -1762,7 +1762,7 @@ function BorrowBooks({ user }) {
                     <td><div style={{ width:22, height:22, borderRadius:6, border:`2px solid ${isSelected?"var(--amber)":"var(--border)"}`, background:isSelected?"var(--amber)":"transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}>{isSelected&&<span style={{ color:"#0D0E14", fontSize:13, fontWeight:900 }}>✓</span>}</div></td>
                     <td><div style={{ display:"flex", alignItems:"center", gap:12 }}>
                       <div style={{ width:40, height:54, borderRadius:6, overflow:"hidden", flexShrink:0, background:bookGrad, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:800, color:"rgba(255,255,255,0.8)", boxShadow:"0 2px 8px rgba(0,0,0,0.3)" }}>
-                        {cleanCover?<img src={`http://localhost:8080/images/covers/${cleanCover}`} alt={b.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e=>{e.target.style.display="none"}} />:<span>{b.title?.[0]?.toUpperCase()}</span>}
+                        {cleanCover?<img src={`${SERVER_URL}/images/covers/${cleanCover}`} alt={b.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e=>{e.target.style.display="none"}} />:<span>{b.title?.[0]?.toUpperCase()}</span>}
                       </div>
                       <div><div style={{ fontWeight:600, fontSize:13 }}>{b.title}</div>{b.genre&&<div style={{ fontSize:11, color:"var(--text3)", marginTop:2 }}>{b.genre}</div>}</div>
                     </div></td>
@@ -1812,7 +1812,7 @@ function RenewButton({ borrowingId, onSuccess }) {
     setLoading(true); setErr("");
     try {
       const t = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:8080/api/borrow/borrowings/${borrowingId}/renew`, { method:"PUT", headers:{ Authorization:`Bearer ${t}` } });
+      const r = await fetch(`${API}/borrow/borrowings/${borrowingId}/renew`, { method:"PUT", headers:{ Authorization:`Bearer ${t}` } });
       const text = await r.text();
       if (r.ok) { setDone(true); onSuccess(); }
       else setErr(text.includes("ALREADY_RENEWED")?"Already renewed":text.includes("OVERDUE")?"Can't renew overdue":"Failed");
@@ -1836,7 +1836,7 @@ function MyBooks({ user }) {
     setLoading(true);
     try {
       const t = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:8080/api/borrow/borrowings/my/${user.id}`, { headers: t?{Authorization:`Bearer ${t}`}:{} });
+      const r = await fetch(`${API}/borrow/borrowings/my/${user.id}`, { headers: t?{Authorization:`Bearer ${t}`}:{} });
       if (r.ok) setBorrowings(await r.json());
     } catch {} finally { setLoading(false); }
   };

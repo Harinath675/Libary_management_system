@@ -1,9 +1,5 @@
 import { useState, useEffect, createContext, useContext } from "react";
-
-// ─────────────────────────────────────────────
-// API BASE URL — change this to your backend URL
-// ─────────────────────────────────────────────
-const API = "http://localhost:8080/api";
+import { API } from "../config";
 
 // ─────────────────────────────────────────────
 // AUTH CONTEXT — stores the logged-in user
