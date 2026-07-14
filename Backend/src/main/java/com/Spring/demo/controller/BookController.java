@@ -32,7 +32,7 @@ import com.Spring.demo.entity.Book;
 import com.Spring.demo.repository.BookRepository;
 
 @RestController
-@RequestMapping("/api/books")
+@RequestMapping("https://libary-management-system-5.onrender.com/api/books")
 @CrossOrigin(origins = "*")
 public class BookController {
 
